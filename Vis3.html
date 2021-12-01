@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Interactive Carriers Weather Delay</title>
+<script src="https://d3js.org/d3.v3.js"></script>
+<style type="text/css">
+        div {
+            font-family: sans-serif;
+        }
+
+        .div1 { /* For placing the main bar chart */
+            float:left;
+            width:70%;
+        }
+
+        .div2 { /* For placing the smaller window with line chart */
+            float:right;
+            width:30%;
+        }
+
+        .bar {
+            fill: #B2B0AF; /* Bar: gray */
+        }
+
+        .bar:hover {
+            fill: #03EDFC; /* Hover over: blue */
+        }
+
+        path { 
+            stroke: steelblue;
+            stroke-width: 2;
+            fill: none;
+        }
+
+        .axis path,
+        .axis line {
+            fill: none;
+            stroke: black;
+        }
+
+        .axis text {
+            font-size: 11px;
+            fill: black;
+        }
+
+        .main text {
+            font-family: monospace;
+            font-size: 16px;
+            fill: #B2B0AF;
+        }
+
+        .main path,
+        .main line{
+            fill: none;
+            stroke: none;
+        }
+
+        .label {
+            fill: rgb(8, 4, 4);
+            font-size: 14px;
+            font-family: monospace;
+        }
+</style>
+</head>
+<body>
+    <script type="text/javascript">
+
+    // Parse the month variable
+
+
+
+    var margin = {
+            top: 100, right: 20, bottom: 20, left: 100
+        };
+
+        var width = 700 - margin.left - margin.right,
+            height = 700 - margin.top - margin.bottom;
+
+        // Add div1 for placing the main SVG
+        d3.select("body").append("div").attr("class","div1").attr("id","bar-div");
+
+        // Add div2 for placing the smaller window line chart
+        d3.select("body").append("div").attr("class","div2").attr("id","line-div");
+
+        var svg = d3.select("#bar-div").append("svg")
+            .attr("width", width + margin.left + margin.right)
+            .attr("height", height + margin.top + margin.bottom);
+
+    svg
+    .append("g")
+    .attr("id", "chart_title")
+    .attr("transform",
+          "translate(" + margin.left + "," + margin.top + ")")
+    .append("text")
+    .attr("id", "chart_title")
+        .attr("x", (width / 2))             
+        .attr("y", 0 - (margin.top / 2))
+        .attr("text-anchor", "middle")
+        .style("font-size", "20px")
+        .text("Carriers' Weather Delay and Average Delay per Delayed Flight");
+
+    
+        svg
+    .append("g")
+    .attr("id", "axis_title")
+    .attr("transform",
+          "translate(" + margin.left + "," + margin.top + ")")
+    .append("text")
+    .attr("id", "chart_title")
+        .attr("x", (width / 2)-180)             
+        .attr("y", 0 - (margin.top / 2)+50)
+        .attr("text-anchor", "middle")
+        .style("font-size", "13px")
+        .text("Delay (min) // Delay per Delayed Flight (min/flight)");
+
+    // Import the CSV data
+        d3.csv("avg1.csv", function(error, data) {
+        if (error) throw error;
+        data.forEach(function(d) {
+            d.Month = +d.Month;
+            d.Carrier = d.Carrier;
+            d.Count = +d.Count;
+            d.Delay = +d.WEATHER_DELAY;
+            d.Avg = +d.Avg
+            d.Year = d.Year;
+        });
+        console.log("Data",data);
+        var nest = d3.nest()
+	    .key(function(d){
+	    	return d.Carrier;
+	    })
+		.rollup(function(leaves){ return d3.sum(leaves, function(d){
+            	return d.Delay})
+                
+            })
+	  .entries(data) 
+      console.log("Data1",nest);
+
+
+      var nest2 = d3.nest()
+	    .key(function(d){
+	    	return d.Carrier;
+	    })
+		.rollup(function(leaves){ return d3.sum(leaves, function(d){
+            	return d.Count})
+            })
+        .entries(data) 
+        //console.log("nest2",nest2);
+    
+        for (i = 0; i < 16; i++) { //for each year
+            //console.log(nest2[i]["values"])
+        nest[i]["Count"] = nest2[i]["values"];
+        nest[i]["Avg"] = Math.round(nest[i]["values"] / nest2[i]["values"]*100)/100;
+        
+    }
+
+    
+      var nest1 = d3.nest()
+	    .key(function(d){
+	    	return d.Carrier;
+	    })
+        .key(function(d){
+	    	return d.Month;
+	    })
+		.rollup(function(leaves){ return d3.sum(leaves, function(d){
+            	return d.Avg})
+            })
+	  .entries(data) 
+      
+      var avgDelay = {};
+        for (i = 0; i < nest1.length; i++) { //for each year
+        nest1[i].values.sort(function(first, second) {
+        return first.key - second.key;
+        });
+        avgDelay[nest1[i].key] = [];
+            for(var j = 0; j < 12; j++){
+                var curr_month = nest1[i].values[j].key;
+                avgDelay[nest1[i].key].push([curr_month, nest1[i].values[j].values]);
+            }
+        
+    }
+        //console.log("Data2",nest1);
+        //console.log("Data2",avgDelay);
+
+        // Sort population
+        data_sorted = nest.sort(function(a, b){ return b.values- a.values; })
+
+        // Define x,y scale 
+        var x = d3.scale.linear()
+            .domain([0, d3.max(data_sorted, function (d){ return d.values; })])
+            .range([0, width]);
+
+        var y = d3.scale.ordinal()
+            .domain(data_sorted.map(function(d){ return d.key; }).reverse())
+            .rangeRoundBands([height, 0], 0.2);
+
+        // Bar chart, we don't really have an x-axis
+        var yAxis = d3.svg.axis().scale(y).tickSize(0).orient("left");
+
+        // Add y axis
+        svg.append("g")
+            .attr("transform", "translate(" + margin.left + "," + margin.top + ")")
+            .attr("class", "main axis")
+            .call(yAxis);
+
+        svg.append("g").attr("id","forBars")
+           .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+        // Formatting Numbers
+        var format = d3.format(",");
+
+        // Add bars
+        svg.select("#forBars").selectAll(".bar")
+            .data(data_sorted)
+            .enter()
+            .append("rect")
+            .attr("class", "bar")
+            .attr("y", function (d){ return y(d.key); })
+            .attr("height", y.rangeBand())
+            .attr("x", 10) // So that y-label and bars are separate
+            .attr("width", function (d){ return x(d.values); })
+            .on("mouseover", function (d){ hover(avgDelay, d.key); }) // Show line chart on the right
+            .on("mouseout", function (d){ d3.select(".div2").select("#svg-line").remove(); }); // Clear chart
+
+        // add number labels on the bar
+        d3.select("#forBars").selectAll(".label").data(data_sorted)
+             .enter()
+             .append("text")
+             .attr("class", "label")
+             .attr("y", function (d) { return y(d.key) + y.rangeBand() / 2 + 3.5; })
+             .attr("x", 15)
+             .text(function (d) { return format(d.values) +"   "+"// "+ format(d.Avg); });
+
+
+
+        //d3.select("#line-div").append("h3").text("This is a test");
+
+        // Hover action - define as function
+        function hover(avgDelay, carrier) {
+           margin_line = { top: 250, right: 20, bottom: 50, left: 30 };
+
+            w = 250 - margin_line.left - margin_line.right,
+            h = 450 - margin_line.top - margin_line.bottom;
+
+            var svg2 = d3.select(".div2").append("svg").attr("id","svg-line")
+                        .attr("width", w + margin_line.left + margin_line.right)
+                        .attr("height", h + margin_line.top + margin_line.bottom);
+
+            var mons = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
+
+            var data = avgDelay[carrier];
+            //console.log("Datax",data);
+
+            var y2 = d3.scale.linear().domain([d3.min(data, function(d){ return d[1]; }), d3.max(data, function(d){ return d[1]; })])
+                       .range([h, 0]);
+
+            var x2 = d3.scale.linear().domain([1, 12])
+                       .range([0, w]);
+
+            var yAxis2 = d3.svg.axis()
+                               .scale(y2)
+                               .ticks(6)
+                               .orient("left");
+
+            var xAxis2 = d3.svg.axis()
+                               .scale(x2)
+                               .tickValues(mons)
+                               .orient("bottom")
+                               .tickFormat(function(d){ return parseInt(d) });
+
+            // Add x and y axis
+            svg2.append("g")
+                .attr("transform", "translate(" + margin_line.left + "," + margin_line.top + ")")
+                .attr("class", "axis")
+                .call(yAxis2)
+                .append("text")
+                .attr("x", 210)
+                .attr("y", -5)
+                .style("text-anchor", "end")
+                .text("Delay Time / Delayed Flight Counts (min)");
+
+            svg2.append("g")
+                .attr("transform", "translate(" + margin_line.left + "," + (h + margin_line.top) + ")")
+                .attr("class", "axis")
+                .call(xAxis2)
+                .append("text")
+                //.attr("class", "label")
+                .attr("x", w+15)
+                .attr("y", 30)
+                .style("text-anchor", "end")
+                .text("Month");
+
+            var line = d3.svg.line()
+                        .x(function(d) { return x2(d[0]); })
+                        .y(function(d) { return y2(d[1]); });
+
+            // Add line
+            svg2.append("g").attr("transform", "translate(" + margin_line.left + "," + margin_line.top + ")")
+                .append("path")
+                .attr("class", "line")
+                .attr("d", line(data));
+        }
+
+        
+        });
+
+    </script>
+</body>
+</html>
