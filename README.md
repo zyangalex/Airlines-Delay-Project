@@ -1,2 +1,15 @@
-# Airlines-Delay-Project
+# Airlines-Delay-Project D3 Visualization
 Predict Airlines Delay with Weather Data
+
+For D3 visualization, we decided to perform exploration data analysis first.
+
+The orginal dataset used in this step is "Cleaned_Data_2012-2017.csv" which is partially cleaned data from previous step.
+
+The "LineChart.html" visualization takes in the original data set "Cleaned_Data_2012-2017.csv". The line chart plotted the total delay time in minutes with respect to month for the seasonality investigation. Different airlines were represented in the chart with different colored lines to be differentiated. From this plot it is concluded thath the seasonality may play a role in the airlines delay and maybe carriers would also have effect. However on the other hand, we observed that the significant delayed carrier may have larger volume of the flight and simple include airlines in modeling may introduce bias.
+
+The "Data Cleaning for D3.ipynb" notebook cleaned the data for the different graph needs since the aggregated data set is very big and is not neccessary to clean the data during visualization everytime. The Run time for first model is very long so we further clean the data for other visualization. The output for this cleaning step is "avg1.csv" and "Examplex.csv" which will be used in following steps.
+
+The "Vis3.html" visualization is interactive that allows user further investigate the arlines influence and seasonality for delays. This visualization takes in "avg1.csv", a further cleaned data set. An index of average delay was calculated in this plot as shown on the bar chart bars label. Delay per Delayed Flight (min/flight) is an index that descibe the delayed minutes divided by the total delayed flights which would include the volume of the carrier. Total delay time is shown as the bar length for each carrier and as in label text on the left. From this plot, we observed that there is no specific trend that we may use in modeling with carrier types but seasonality is indeed showing. When the mouse is hover over the bar, a line chart is shown for the particular airline's performance over each month. Peak month were selected to form a binary variable in latter modeling. 
+
+Then we want to show user further about the weather trend in each city with respect to different weather parameters. The "MonthlyWeather.html" visualization provided an interactive dropdown line chart that allow user to learn the weather seasonality. This visualization uses the cleaned data set named as "Examplex.csv". The first dropdown menu is the airport code and weather parameter. For example, SFO-WS means the Wind Speed in SFO airport. The abbreviation and the unit is as following: WS-Windspeed-(m/s); Temp-Temperature-(K);Hum-Humidity-(%); Pres-Pressure-(millibars). Multiple grey lines in the chart are for different years. The second drop down menu is for the year selection which will highlight the selected year's line. In our data set, the begining year 2012 and ending year 2017 are not complete in month so that a discontinuity would be seen on the plot. Year 2012 has only 2 months of data and year 2017 has ony 10 months of data.
+
